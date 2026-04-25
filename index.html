@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>VORTEX | Operations Center</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #00f3ff;
+      --accent: #00ff66;
+      --danger: #ff003c;
+      --warning: #f1c40f;
+      --bg-dark: #02050a;
+      --current-glow: var(--primary);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.2s ease; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #e0e0e0;
+      font-family: 'Cairo', sans-serif;
+      line-height: 1.4;
+      overflow-x: hidden;
+      text-align: right;
+    }
+
+    #matrix-canvas { position: fixed; inset: 0; z-index: -1; opacity: 0.12; }
+    .env-protection { position: fixed; inset: 0; pointer-events: none; z-index: 999; background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.8) 100%); }
+
+    .nav-container {
+      position: sticky; top: 0; width: 100%;
+      background: rgba(2, 5, 10, 0.95);
+      border-bottom: 1px solid var(--current-glow);
+      z-index: 1000; backdrop-filter: blur(10px);
+    }
+    .brand-area { text-align: center; padding: 10px 0; font-family: 'Orbitron'; font-weight: 900; color: var(--current-glow); letter-spacing: 2px; font-size: 1.1rem; }
+    
+    nav { display: flex; width: 100%; border-top: 1px solid rgba(255,255,255,0.05); }
+    .nav-item { flex: 1; padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.55rem; color: #666; }
+    .nav-item.active { color: var(--current-glow); background: rgba(0, 243, 255, 0.05); }
+
+    .main-content { padding: 15px; max-width: 600px; margin: 0 auto; z-index: 10; position: relative; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+    .stat-box { background: rgba(255, 255, 255, 0.02); padding: 8px; border: 1px solid rgba(255,255,255,0.05); text-align: center; border-radius: 4px; }
+    .stat-val { display: block; font-family: 'Share Tech Mono'; color: var(--primary); font-size: 0.9rem; }
+    .stat-lbl { font-size: 0.5rem; color: #777; }
+
+    .cyber-card { background: rgba(10, 15, 25, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 4px; position: relative; margin-bottom: 20px; }
+    .card-label { position: absolute; top: -10px; right: 15px; background: var(--current-glow); padding: 2px 8px; font-size: 0.55rem; font-family: 'Orbitron'; color: #000; font-weight: 900; }
+
+    h2 { font-size: 0.95rem; margin-bottom: 10px; color: #fff; border-right: 3px solid var(--current-glow); padding-right: 8px; }
+
+    .cyber-input { width: 100%; background: #000; border: 1px solid #333; color: var(--primary); padding: 10px; margin-bottom: 10px; font-family: 'Cairo', sans-serif; font-size: 0.8rem; outline: none; text-align: right; }
+    .cyber-btn { background: transparent; border: 1px solid var(--current-glow); padding: 10px; font-family: 'Cairo', sans-serif; font-weight: bold; width: 100%; cursor: pointer; font-size: 0.8rem; color: var(--current-glow); display: block; width: 100%; text-align: center; text-decoration: none; }
+    .cyber-btn:hover { background: var(--current-glow); color: #000; box-shadow: 0 0 15px var(--current-glow); }
+
+    .brief-box { background: rgba(255, 255, 255, 0.03); border: 1px dashed rgba(255, 255, 255, 0.2); padding: 12px; margin-bottom: 15px; font-size: 0.75rem; color: #bbb; line-height: 1.6; }
+    .brief-box strong { color: var(--current-glow); }
+
+    /* تنبيهات العمل */
+    .action-notice { font-size: 0.7rem; color: var(--warning); margin-top: 10px; padding: 10px; border: 1px solid rgba(241, 196, 15, 0.2); background: rgba(241, 196, 15, 0.05); text-align: center; border-radius: 4px; }
+
+    .review-item { background: rgba(255,255,255,0.03); padding: 10px; margin-bottom: 8px; border-right: 3px solid var(--accent); border-radius: 0 4px 4px 0; animation: fadeIn 0.5s ease; position: relative; overflow: hidden;}
+    .review-user { color: var(--accent); font-family: 'Share Tech Mono'; font-size: 0.75rem; display: block; margin-bottom: 4px; text-align: left; }
+    .review-stars { color: var(--warning); font-size: 0.6rem; float: left; }
+    
+    .star-rating-select { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px; margin-bottom: 10px; }
+    .star-rating-select input { display: none; }
+    .star-rating-select label { cursor: pointer; color: #333; font-size: 1.2rem; transition: 0.2s; }
+    .star-rating-select input:checked ~ label,
+    .star-rating-select label:hover,
+    .star-rating-select label:hover ~ label { color: var(--warning); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  </style>
+</head>
+<body onclick="playBeep()">
+
+  <div class="env-protection"></div>
+  <canvas id="matrix-canvas"></canvas>
+
+  <div class="nav-container">
+    <div class="brand-area">VORTEX NETWORK</div>
+    <nav>
+      <div class="nav-item active" onclick="scrollToSec('home', '#00f3ff', this)"><i class="fas fa-terminal"></i>النظام</div>
+      <div class="nav-item" onclick="scrollToSec('escrow', '#00ff66', this)"><i class="fas fa-plus-square"></i>إنشاء</div>
+      <div class="nav-item" onclick="scrollToSec('legal', '#f1c40f', this)"><i class="fas fa-gavel"></i>القانون</div>
+      <div class="nav-item" onclick="scrollToSec('support', '#ff003c', this)"><i class="fas fa-headset"></i>الدعم</div>
+    </nav>
+  </div>
+
+  <main class="main-content">
+    <div class="stats-grid">
+        <div class="stat-box"><span class="stat-val" id="stat-ops">24,842</span><span class="stat-lbl">عملية</span></div>
+        <div class="stat-box"><span class="stat-val" id="stat-sum">$2,142,500</span><span class="stat-lbl">إجمالي</span></div>
+        <div class="stat-box"><span class="stat-val" id="stat-status" style="color:var(--accent)">متصل</span><span class="stat-lbl">الحالة</span></div>
+    </div>
+
+    <section id="home" class="cyber-card">
+      <div class="card-label">SYSTEM_INFO</div>
+      <h2>بروتوكول VORTEX الوسيط</h2>
+      <div class="brief-box">
+          <strong>النبذة:</strong> نظام تقني مشفر يعمل كطرف ثالث ذكي لتأمين عمليات البيع والشراء عبر حجز المبالغ في محفظة باردة حتى يتم إغلاق التذكرة بنجاح.<br>
+          <strong>طريقة العمل:</strong> يضمن النظام حق المشتري في استلام السلعة وحق البائع في استلام ماله، مع تدخل بشري فني للتحكيم عند النزاع.
+      </div>
+    </section>
+
+    <section id="escrow" class="cyber-card" style="border-color: var(--accent);">
+      <div class="card-label" style="color:#000; background:var(--accent)">NEW_ESCROW</div>
+      <h2>توليد عقد وساطة جديد</h2>
+      <div class="brief-box" style="border-color: var(--accent);">
+          <strong>تنبيه هام:</strong> لضمان سلاسة العملية، يجب على <strong>البائع والمشتري معاً</strong> إنشاء تذكرة عقد وتعبئة البيانات بشكل متطابق.
+      </div>
+      <form action="https://formspree.io/f/xpqklpqg" method="POST">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <input type="text" name="Buyer" class="cyber-input" placeholder="اسم المشتري" required>
+              <input type="text" name="Seller" class="cyber-input" placeholder="اسم البائع" required>
+          </div>
+          <input type="number" name="Amount" class="cyber-input" placeholder="المبلغ (USDT)" required>
+          <textarea name="Details" class="cyber-input" placeholder="تفاصيل الاتفاق والشروط..." rows="2" required></textarea>
+          <button type="submit" class="cyber-btn" style="border-color:var(--accent); color:var(--accent);">تفعيل عقد الوساطة</button>
+      </form>
+      <div class="action-notice">
+          <i class="fas fa-exclamation-triangle"></i> بعد تفعيل العقد، يجب التواصل فوراً مع الموظف عبر التليجرام لإتمام العملية رسمياً تحت إشراف المنصة.
+      </div>
+    </section>
+
+    <section id="legal" class="cyber-card" style="border-color: var(--warning);">
+        <div class="card-label" style="color:#000; background:var(--warning)">RULES_OF_ENGAGEMENT</div>
+        <h2>شروط الموقع والعمل</h2>
+        <div class="brief-box" style="border-color: var(--warning); font-size: 0.7rem;">
+            1. <strong>المسؤولية:</strong> لا يتحمل VORTEX أي مسؤولية عن تعاملات تتم خارج روابط الموقع الرسمية.<br>
+            2. <strong>العمولة:</strong> يقتطع النظام 5% من إجمالي المعاملة، تُدفع من الطرف المتفق عليه.<br>
+            3. <strong>المدة:</strong> تذكرة الوساطة صالحة لمدة 24 ساعة فقط ما لم يتم تمديدها من الدعم.<br>
+            4. <strong>المصداقية:</strong> أي محاولة تلاعب بالبيانات أو تقديم إثباتات مزورة تعرض الحساب للحظر النهائي وتجميد الرصيد للتحقيق.<br>
+            5. <strong>التحكيم:</strong> في حال النزاع، يتم طلب فيديو يثبت صحة الادعاء (مثل فيديو فحص الحساب)، وقرار الوسيط قطعي.
+        </div>
+    </section>
+
+    <section id="support" class="cyber-card" style="border-color: var(--danger);">
+        <div class="card-label" style="color:#fff; background:var(--danger)">COMMUNICATION</div>
+        <h2>المساعدة والتحكيم الفوري</h2>
+        <div class="brief-box" style="border-color: var(--danger);">
+            <strong>قناة التواصل:</strong> الموظف المسؤول هو الجهة الوحيدة المخولة بطلب تحويل الأموال أو تأكيد الاستلام.
+        </div>
+        <form action="https://formspree.io/f/xpqklpqg" method="POST">
+            <input type="email" name="Email" class="cyber-input" placeholder="بريدك الإلكتروني للرد عليك" required>
+            <textarea name="Query" class="cyber-input" placeholder="اكتب مشكلتك هنا..." rows="3" required></textarea>
+            <button type="submit" class="cyber-btn" style="border-color:var(--danger); color:var(--danger); margin-bottom: 10px;">إرسال استفسار</button>
+        </form>
+        <div style="border-top: 1px solid #333; padding-top: 10px;">
+            <a href="https://t.me/Electricsoul7" target="_blank" class="cyber-btn" style="border-color:var(--danger); color:var(--danger); font-size: 0.75rem;">
+                <i class="fab fa-telegram-plane"></i> تواصل مع الموظف لإتمام الوساطة
+            </a>
+        </div>
+    </section>
+
+    <section id="about" class="cyber-card" style="border-color: var(--accent);">
+        <div class="card-label" style="background: var(--accent); color:#000">LIVE_FEED</div>
+        <h2>المراجعات الحية</h2>
+        <div id="reviews-container" style="min-height: 150px;"></div>
+        
+        <div style="border-top: 1px solid #222; padding-top: 15px;">
+            <p style="font-size: 0.7rem; color: #777; margin-bottom: 5px;">أضف تقييمك:</p>
+            <div class="star-rating-select">
+                <input type="radio" id="s5" name="stars" value="5" checked><label for="s5">★</label>
+                <input type="radio" id="s4" name="stars" value="4"><label for="s4">★</label>
+                <input type="radio" id="s3" name="stars" value="3"><label for="s3">★</label>
+                <input type="radio" id="s2" name="stars" value="2"><label for="s2">★</label>
+                <input type="radio" id="s1" name="stars" value="1"><label for="s1">★</label>
+            </div>
+            <input type="text" id="user-name" class="cyber-input" placeholder="اسمك المستعار">
+            <textarea id="user-review" class="cyber-input" placeholder="كيف كانت تجربتك؟" rows="2"></textarea>
+            <button type="button" class="cyber-btn" onclick="postReview()" style="border-color:var(--accent); color:var(--accent);">إرسال المراجعة</button>
+        </div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const drops = Array(Math.floor(canvas.width/15)).fill(1);
+    function draw() {
+      ctx.fillStyle = 'rgba(2, 5, 10, 0.15)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#00f3ff'; ctx.font = "12px Share Tech Mono";
+      drops.forEach((y, i) => {
+        ctx.fillText(Math.floor(Math.random()*2), i*15, y*15);
+        if(y*15 > canvas.height && Math.random() > 0.97) drops[i] = 0;
+        drops[i]++;
+      });
+    }
+    setInterval(draw, 50);
+
+    let baseOps = 24842;
+    let baseSum = 2142500;
+    function updateLiveStats() {
+        baseOps += Math.floor(Math.random() * 3) + 1;
+        baseSum += Math.floor(Math.random() * 450) + 50;
+        document.getElementById('stat-ops').innerText = baseOps.toLocaleString();
+        document.getElementById('stat-sum').innerText = '$' + baseSum.toLocaleString();
+    }
+    setInterval(updateLiveStats, 7000);
+
+    const reviewsContainer = document.getElementById('reviews-container');
+    const pool = [
+        { u: "@Khaled_Tr", m: "وسيط موثوق، تم البيع في أقل من 10 دقائق.", s: 5 },
+        { u: "@M_Zeyad", m: "نظام التذاكر سهل جداً وواضح.", s: 5 },
+        { u: "@UsDT_Master", m: "أمان كامل، لم أقلق أبداً على مالي.", s: 4 },
+        { u: "@S_Trading", m: "أفضل خدمة وساطة عربية.", s: 5 },
+        { u: "@Elite_User", m: "الدعم الفني رد علي في تليجرام فوراً.", s: 5 },
+        { u: "@Ahmed_88", m: "العمولة مرتفعة قليلاً لكن الأمان يستحق.", s: 4 }
+    ];
+
+    function createReviewHTML(obj) {
+        let stars = "★".repeat(obj.s) + "☆".repeat(5-obj.s);
+        return `<div class="review-item">
+                    <span class="review-stars">${stars}</span>
+                    <span class="review-user">${obj.u}</span>
+                    <div style="font-size:0.8rem; clear:both;">${obj.m}</div>
+                </div>`;
+    }
+
+    setInterval(() => {
+        const item = pool[Math.floor(Math.random()*pool.length)];
+        const randomStars = Math.random() > 0.3 ? 5 : 4; 
+        const html = createReviewHTML({...item, s: randomStars});
+        if(reviewsContainer.children.length > 2) reviewsContainer.removeChild(reviewsContainer.lastChild);
+        reviewsContainer.insertAdjacentHTML('afterbegin', html);
+    }, 6000);
+
+    function postReview() {
+        const name = document.getElementById('user-name').value || "User_" + Math.floor(Math.random()*999);
+        const msg = document.getElementById('user-review').value;
+        const starVal = document.querySelector('input[name="stars"]:checked').value;
+        if(!msg) return;
+        const html = createReviewHTML({u: name, m: msg, s: parseInt(starVal)});
+        reviewsContainer.insertAdjacentHTML('afterbegin', html);
+        document.getElementById('user-review').value = "";
+        playBeep();
+    }
+
+    function scrollToSec(id, color, btn) {
+      document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+      document.documentElement.style.setProperty('--current-glow', color);
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep() {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    var Tawk_API=Tawk_API||{};
+    (function(){
+      var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+      s1.async=true; s1.src='https://embed.tawk.to/67bb01777265886d2673241d/1iloht9v7';
+      s1.charset='UTF-8'; s1.setAttribute('crossorigin','*');
+      s0.parentNode.insertBefore(s1,s0);
+    })();
+  </script>
+</body>
+</html>
+<p style="text-align: center;">للتواصل مع الدعم: admin@vortextrust.dev</p>
