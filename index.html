@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>VORTEX | Advanced Operations Center</title>
+  
+  <link rel="stylesheet" href="https://s.pageclip.co/v1/pageclip.css" media="screen">
+  
   <link rel="icon" type="image/png" href="1777083916689.png">
   <link rel="apple-touch-icon" href="1777083916689.png">
 
@@ -452,15 +455,18 @@
       <div class="card-label" style="color:#000; background:var(--accent)">NEW_CONTRACT</div>
       <img src="fingerprint_blockchane.png" class="header-icon" alt="Fingerprint">
       <h2>🔐 توليد عقد وساطة مشفر</h2>
-      <form action="https://formspree.io/f/xpqklpqg" method="POST">
+      
+      <form action="https://send.pageclip.co/tJQUpOTEtQkHI9j7O4gmp6xxJRynW103" class="pageclip-form" method="post">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <input type="text" name="Buyer" class="cyber-input" placeholder="👤 المشتري" required>
-              <input type="text" name="Seller" class="cyber-input" placeholder="👤 البائع" required>
+              <input type="text" name="name" class="cyber-input" placeholder="👤 اسم المشتري" required>
+              <input type="text" name="seller" class="cyber-input" placeholder="👤 اسم البائع" required>
           </div>
-          <input type="number" name="Amount" class="cyber-input" placeholder="💰 المبلغ (USDT)" required>
-          <textarea name="Details" class="cyber-input" placeholder="📝 تفاصيل الاتفاق والشروط..." rows="3" required></textarea>
-          <button type="submit" class="cyber-btn" style="border-color:var(--accent); color:var(--accent);">
-            <i class="fas fa-rocket"></i> تنشيط العقد الآن
+          <input type="email" name="email" class="cyber-input" placeholder="📧 بريد المشتري" required>
+          <input type="number" name="amount" class="cyber-input" placeholder="💰 المبلغ (USDT)" required>
+          <textarea name="details" class="cyber-input" placeholder="📝 تفاصيل الاتفاق والشروط..." rows="3" required></textarea>
+          
+          <button type="submit" class="cyber-btn pageclip-form__submit" style="border-color:var(--accent); color:var(--accent);">
+            <span><i class="fas fa-rocket"></i> تنشيط العقد الآن</span>
           </button>
       </form>
       <img src="fingerprint_blockchane.png" class="card-icon-bg" alt="icon">
@@ -472,11 +478,12 @@
         <a href="https://t.me/Electricsoul7" target="_blank" class="cyber-btn" style="border-color:var(--danger); color:var(--danger); padding: 16px; margin-bottom: 25px;">
             <i class="fab fa-telegram-plane"></i> مراسلة المسؤول عبر Telegram
         </a>
-        <form action="https://formspree.io/f/xpqklpqg" method="POST">
-            <input type="email" name="Email" class="cyber-input" placeholder="📧 بريدك الإلكتروني" required>
-            <textarea name="Query" class="cyber-input" placeholder="💭 اشرح مشكلتك أو استفسارك بالتفصيل..." rows="4" required></textarea>
-            <button type="submit" class="cyber-btn" style="border-color:var(--danger); color:var(--danger);">
-              <i class="fas fa-paper-plane"></i> إرسال بلاغ فوري
+        
+        <form action="https://send.pageclip.co/tJQUpOTEtQkHI9j7O4gmp6xxJRynW103" class="pageclip-form" method="post">
+            <input type="email" name="email" class="cyber-input" placeholder="📧 بريدك الإلكتروني" required>
+            <textarea name="query" class="cyber-input" placeholder="💭 اشرح مشكلتك أو استفسارك بالتفصيل..." rows="4" required></textarea>
+            <button type="submit" class="cyber-btn pageclip-form__submit" style="border-color:var(--danger); color:var(--danger);">
+              <span><i class="fas fa-paper-plane"></i> إرسال بلاغ فوري</span>
             </button>
         </form>
     </section>
@@ -502,6 +509,8 @@
           </p>
       </div>
   </footer>
+
+  <script src="https://s.pageclip.co/v1/pageclip.js" charset="utf-8"></script>
 
   <script>
     const canvas = document.getElementById('matrix-canvas');
