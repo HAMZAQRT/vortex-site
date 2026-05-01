@@ -22,7 +22,8 @@ jobs:
           import os
           import base64
           keystore_b64 = os.environ['KEYSTORE_FILE']
-          with open("my-release-key.jks", "wb") as f:
+          # حفظ الملف في مكان ثابت ومؤكد
+          with open("android/my-release-key.jks", "wb") as f:
               f.write(base64.b64decode(keystore_b64))
         shell: python
         env:
@@ -30,24 +31,18 @@ jobs:
 
       - name: Build Android Project
         run: |
-          # تجهيز المجلدات والملفات
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
-          
-          # تثبيت Capacitor وتهيئته
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
-          
-          # تعديل ملفات Gradle لتقبل التوقيع الخارجي
           npx cap copy
           
           cd android
           chmod +x gradlew
-          
-          # البناء مع تجاوز أي مشاكل في شهادات التوقيع الافتراضية
+          # استخدام المسار المباشر للملف لضمان عدم الضياع
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=$(pwd)/../my-release-key.jks \
+            -Pandroid.injected.signing.store.file=$(pwd)/my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
