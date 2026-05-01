@@ -1,8 +1,11 @@
-name: Build Signed APK
+name: Build and Release APK
 on:
   push:
     branches:
       - main
+
+permissions:
+  contents: write # هذا السطر يضمن إعطاء الصلاحية للسيرفر لكتابة التحديث
 
 jobs:
   build:
@@ -17,7 +20,7 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Build Everything
+      - name: Build APK
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
           mkdir -p www && cp -r * www/ 2>/dev/null || true
@@ -32,9 +35,17 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Force Upload
-        uses: actions/upload-artifact@v4
+      - name: Prepare APK for Release
+        run: |
+          # هذه الخطوة ستبحث عن التطبيق وتسحبه للمجلد الرئيسي وتسميه باسم واضح
+          find . -name "*.apk" -exec cp {} VortexApp-Release.apk \;
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: Vortex-Signed-APK
-          path: "**/*.apk"
-          if-no-files-found: error
+          tag_name: "v1.0.${{ github.run_number }}"
+          name: "Vortex Update #${{ github.run_number }}"
+          body: "تطبيق Vortex جاهز للتحميل والتثبيت."
+          files: VortexApp-Release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
