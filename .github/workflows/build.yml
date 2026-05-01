@@ -31,7 +31,8 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          # وضع المفتاح في المجلد الصحيح الذي تم إنشاؤه للتو
+          # وضع المفتاح في المجلد الذي يتوقعه Gradle
+          mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
       - name: Build with Gradle
@@ -48,6 +49,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Vortex-Signed-APK
-          # هذا السطر سيبحث في كل المجلدات عن أي ملف apk
-          path: "**/*.apk"
+          # هذا المسار سيبحث في كل مكان عن ملفات apk ويرفعها
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
