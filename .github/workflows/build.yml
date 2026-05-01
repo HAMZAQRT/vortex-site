@@ -17,25 +17,28 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Build Web Assets
+      - name: Decode Keystore
         run: |
+          # إنشاء المجلد يدوياً لضمان وجوده قبل وضع الملف فيه
+          mkdir -p android/app
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
+        shell: bash
+
+      - name: Build Android Project
+        run: |
+          # تجهيز ملفات الويب
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
+          
+          # إعداد Capacitor
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
           npx cap copy
-
-      - name: Decode Keystore
-        run: |
-          # فك تشفير المفتاح ووضعه في المجلد الرئيسي للأندرويد
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
-
-      - name: Build and Sign APK
-        run: |
+          
+          # البناء من داخل مجلد android
           cd android
           chmod +x gradlew
-          # تنفيذ بناء النسخة الموقعة مع تمرير المسار الكامل للملف
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
