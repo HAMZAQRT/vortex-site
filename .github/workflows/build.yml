@@ -17,19 +17,7 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Decode Keystore
-        run: |
-          import os
-          import base64
-          keystore_b64 = os.environ['KEYSTORE_FILE']
-          # حفظ الملف في مكان ثابت ومؤكد
-          with open("android/my-release-key.jks", "wb") as f:
-              f.write(base64.b64decode(keystore_b64))
-        shell: python
-        env:
-          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
-
-      - name: Build Android Project
+      - name: Build Web Assets
         run: |
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
@@ -37,15 +25,24 @@ jobs:
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
           npx cap copy
-          
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
+
+      - name: Build and Sign APK
+        run: |
           cd android
           chmod +x gradlew
-          # استخدام المسار المباشر للملف لضمان عدم الضياع
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=$(pwd)/my-release-key.jks \
+            -Pandroid.injected.signing.store.file=my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
