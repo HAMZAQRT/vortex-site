@@ -16,24 +16,29 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Prepare and Build
+      - name: Clean and Build APK
         run: |
-          # 1. تجهيز مجلد الويب ونقل ملفاتك إليه
-          mkdir www
-          cp -r index.html www/ 2>/dev/null || true
-          cp -r * www/ 2>/dev/null || true
+          # 1. تنظيف شامل للمحاولات السابقة
+          rm -rf android www package.json package-lock.json
           
-          # 2. إنشاء ملفات الإعدادات
+          # 2. تجهيز مجلد الويب
+          mkdir www
+          cp index.html www/ 2>/dev/null || true
+          cp -r * www/ 2>/dev/null || true
+          # إزالة مجلد github من داخل www لضمان نظافة التطبيق
+          rm -rf www/.github
+          
+          # 3. إنشاء ملفات الإعدادات وتثبيت الأدوات
           echo '{"name": "vortextrust", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # 3. تهيئة الأندرويد (تعديل المسار إلى www)
+          # 4. بناء مشروع أندرويد من الصفر
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
           npx cap copy
           
-          # 4. البناء النهائي
-          cd android && ./gradlew assembleDebug
+          # 5. بناء ملف الـ APK (مع أمر التنظيف الداخلي)
+          cd android && ./gradlew clean assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
