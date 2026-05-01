@@ -17,38 +17,24 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Install Dependencies
+      - name: Build Everything
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          mkdir -p www
-          cp -r * www/ 2>/dev/null || true
-
-      - name: Initialize Capacitor and Android
-        run: |
+          mkdir -p www && cp -r * www/ 2>/dev/null || true
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
-          npx cap add android
-          npx cap copy
-
-      - name: Decode Keystore
-        run: |
-          # وضع المفتاح في المجلد الذي يتوقعه Gradle
+          npx cap add android && npx cap copy
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
-
-      - name: Build with Gradle
-        run: |
-          cd android
-          chmod +x gradlew
+          cd android && chmod +x gradlew
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Upload APK
+      - name: Force Upload
         uses: actions/upload-artifact@v4
         with:
           name: Vortex-Signed-APK
-          # هذا المسار سيبحث في كل مكان عن ملفات apk ويرفعها
-          path: android/app/build/outputs/apk/release/*.apk
+          path: "**/*.apk"
           if-no-files-found: error
