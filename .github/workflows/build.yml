@@ -14,22 +14,25 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24' # التحديث المطلوب في التحذير
+          node-version: '24'
 
-      - name: Initialize and Build
+      - name: Prepare and Build
         run: |
-          # إنشاء ملفات الإعدادات الأساسية
+          # 1. تجهيز مجلد الويب ونقل ملفاتك إليه
+          mkdir www
+          cp -r index.html www/ 2>/dev/null || true
+          cp -r * www/ 2>/dev/null || true
+          
+          # 2. إنشاء ملفات الإعدادات
           echo '{"name": "vortextrust", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # تهيئة المشروع
-          npx cap init "VortexApp" "com.vortextrust.app" --web-dir .
+          # 3. تهيئة الأندرويد (تعديل المسار إلى www)
+          npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
-          
-          # نسخ ملفات الـ HTML والـ CSS للأندرويد
           npx cap copy
           
-          # بناء ملف الـ APK النهائي
+          # 4. البناء النهائي
           cd android && ./gradlew assembleDebug
 
       - name: Upload APK
