@@ -21,21 +21,14 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > my-release-key.jks
 
-      - name: Build Android APK
+      - name: Build and Sign APK
         run: |
-          # إنشاء مجلد الويب وتجهيز الملفات
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
-          
-          # تثبيت الأدوات اللازمة
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          
-          # تهيئة Capacitor
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
           npx cap copy
-          
-          # بناء التطبيق وتوقيعه
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease \
@@ -44,8 +37,8 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Upload APK
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: Vortex-Signed-APK
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/*.apk
