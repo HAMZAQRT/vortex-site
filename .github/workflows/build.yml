@@ -21,8 +21,6 @@ jobs:
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
-          # التحقق من وجود الملف وحجمه للتأكد
-          ls -lh android/app/my-release-key.jks
 
       - name: Build Android Project
         run: |
@@ -32,7 +30,6 @@ jobs:
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
           npx cap copy
-          
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease \
@@ -40,13 +37,11 @@ jobs:
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload Signed APK
+      - name: Find and Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Vortex-Signed-APK
+          # هذا المسار سيبحث عن أي ملف apk تم إنتاجه ويرفعه فوراً
           path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
