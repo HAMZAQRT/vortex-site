@@ -38,10 +38,12 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Find and Upload APK
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: Vortex-Signed-APK
-          # هذا المسار سيبحث عن أي ملف apk تم إنتاجه ويرفعه فوراً
-          path: android/app/build/outputs/apk/release/*.apk
+          # هذا المسار سيبحث في المجلدات العميقة عن أي ملف ينتهي بـ .apk
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
