@@ -37,8 +37,8 @@ jobs:
 
       - name: Prepare APK for Release
         run: |
-          # نسخ الملف مباشرة من مساره الأصلي دون أمر بحث
-          cp android/app/build/outputs/apk/release/*.apk VortexApp-Release.apk
+          # بحث آمن داخل مجلد الأندرويد فقط واستخراج الملف
+          find android -type f -name "*.apk" -exec cp {} VortexApp-Release.apk \;
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
