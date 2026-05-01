@@ -19,16 +19,29 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > my-release-key.jks
+          import os
+          import base64
+          # قراءة النص الطويل من الأسرار وتحويله لملف jks
+          keystore_b64 = os.environ['KEYSTORE_FILE']
+          with open("my-release-key.jks", "wb") as f:
+              f.write(base64.b64decode(keystore_b64))
+        shell: python
+        env:
+          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
 
       - name: Build and Sign APK
         run: |
+          # تجهيز مجلد الويب
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
+          
+          # تثبيت Capacitor وبناء مشروع أندرويد
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
           npx cap copy
+          
+          # الدخول لمجلد أندرويد وبناء النسخة الموقعة
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease \
