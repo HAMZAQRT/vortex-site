@@ -14,31 +14,37 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20' # سنعود للإصدار 20 المستقر حالياً للبناء
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'zulu'
 
       - name: Clean and Build APK
         run: |
-          # 1. تنظيف شامل للمحاولات السابقة
+          # 1. تنظيف عميق
           rm -rf android www package.json package-lock.json
           
-          # 2. تجهيز مجلد الويب
+          # 2. إنشاء ملفات الإعدادات
+          echo '{"name": "vortextrust", "version": "1.0.0"}' > package.json
+          npm install @capacitor/core@5.0.0 @capacitor/cli@5.0.0 @capacitor/android@5.0.0
+          
+          # 3. تجهيز مجلد الويب
           mkdir www
           cp index.html www/ 2>/dev/null || true
           cp -r * www/ 2>/dev/null || true
-          # إزالة مجلد github من داخل www لضمان نظافة التطبيق
           rm -rf www/.github
           
-          # 3. إنشاء ملفات الإعدادات وتثبيت الأدوات
-          echo '{"name": "vortextrust", "version": "1.0.0"}' > package.json
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          
-          # 4. بناء مشروع أندرويد من الصفر
+          # 4. بناء مشروع الأندرويد من الصفر بإصدار محدد
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
-          npx cap copy
           
-          # 5. بناء ملف الـ APK (مع أمر التنظيف الداخلي)
-          cd android && ./gradlew clean assembleDebug
+          # 5. حل مشكلة الصلاحيات وبناء الـ APK
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
