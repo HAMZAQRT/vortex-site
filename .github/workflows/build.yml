@@ -5,7 +5,7 @@ on:
       - main
 
 permissions:
-  contents: write # هذا السطر يضمن إعطاء الصلاحية للسيرفر لكتابة التحديث
+  contents: write 
 
 jobs:
   build:
@@ -37,8 +37,8 @@ jobs:
 
       - name: Prepare APK for Release
         run: |
-          # هذه الخطوة ستبحث عن التطبيق وتسحبه للمجلد الرئيسي وتسميه باسم واضح
-          find . -name "*.apk" -exec cp {} VortexApp-Release.apk \;
+          # نسخ الملف مباشرة من مساره الأصلي دون أمر بحث
+          cp android/app/build/outputs/apk/release/*.apk VortexApp-Release.apk
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
