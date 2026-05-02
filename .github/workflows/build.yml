@@ -1,4 +1,4 @@
-name: Vortex Official Production Build
+name: Vortex Force Build Success
 on:
   push:
     branches: [main]
@@ -15,7 +15,7 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Clean & Sync Android
+      - name: Preparation & Key Force Path
         run: |
           npm install
           mkdir -p www && cp index.html www/
@@ -23,13 +23,14 @@ jobs:
           npx cap add android
           npx cap sync android
           
-          # التأكد من وجود الملف المرفوع ونقله للمجلد الصحيح
-          if [ -f "my-release-key.jks" ]; then
-            cp my-release-key.jks android/app/my-release-key.jks
-          else
-            echo "Error: my-release-key.jks not found in repository!"
-            exit 1
-          fi
+          # 1. إنشاء المسار الذي يطلبه النظام في الصورة بالضبط
+          mkdir -p /home/runner/.gradle/daemon/8.2.1/
+          
+          # 2. نسخ الملف الذي رفعته أنت إلى ذلك المسار الإجباري
+          cp my-release-key.jks /home/runner/.gradle/daemon/8.2.1/my-release-key.jks
+          
+          # 3. وضع نسخة إضافية في المجلد المعتاد للاحتياط
+          cp my-release-key.jks android/app/my-release-key.jks
           
           find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
 
@@ -37,8 +38,9 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
+          # إجبار Gradle على استخدام المسار الذي يريده
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=my-release-key.jks \
+            -Pandroid.injected.signing.store.file=/home/runner/.gradle/daemon/8.2.1/my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
@@ -46,5 +48,5 @@ jobs:
       - name: Export Final APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vortex-Network-Official
+          name: Vortex-Network-Final-OK
           path: android/app/build/outputs/apk/release/*.apk
