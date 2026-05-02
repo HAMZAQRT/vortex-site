@@ -1,4 +1,4 @@
-name: Vortex Final Fix
+name: Vortex Ultimate Fix
 on:
   push:
     branches: [main]
@@ -6,36 +6,43 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Prepare Files & Build
+      - name: Fix Permissions & Prepare Files
         run: |
-          npm install
-          # إنشاء مجلد www ونقل الملفات إليه لإرضاء Capacitor
-          mkdir -p www
-          cp index.html www/
-          cp -r *.svg www/ 2>/dev/null || true
-          cp -r *.png www/ 2>/dev/null || true
+          # منح صلاحية التنفيذ للنظام
+          chmod -R +x .
           
-          # مسح المجلد القديم وبناء واحد جديد
+          # إنشاء مجلد www ونقل ملفاتك إليه (لحل مشكلة webDir)
+          mkdir -p www
+          cp index.html www/ 2>/dev/null || true
+          cp package.json www/ 2>/dev/null || true
+          
+          npm install
+          
+          # مسح أي بناء قديم وبدء بناء نظيف
           rm -rf android
           npx cap add android
           npx cap sync android
           
-          # إصلاح الجافا
+          # إصلاح الجافا تلقائياً
           find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
 
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
-      - name: Build Official APK
+      - name: Build Final APK
         run: |
-          cd android && chmod +x gradlew
+          cd android
+          chmod +x gradlew
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
@@ -45,5 +52,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vortex-Official-App
+          name: Vortex-Network-Success
           path: android/app/build/outputs/apk/release/*.apk
