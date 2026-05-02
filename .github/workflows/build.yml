@@ -28,25 +28,25 @@ jobs:
           cp -r * www/ 2>/dev/null || true
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android || true
-          # التزامن ضروري لإنشاء مجلد أندرويد بشكل صحيح
           npx cap sync android
 
       - name: Decode Keystore
         run: |
-          # تنظيف الكود وفك التشفير (تجاوزنا هذه المرحلة بنجاح)
+          # فك التشفير ووضع الملف في مكان يسهل الوصول إليه داخل مجلد أندرويد
           echo "${{ secrets.KEYSTORE_FILE }}" | tr -dc 'a-zA-Z0-9+/=' | base64 --decode > android/app/release.jks
 
       - name: Generate Signed APK
         run: |
           cd android
-          # إعطاء صلاحيات للملف التنفيذي لـ Gradle
           chmod +x gradlew
-          # تشغيل البناء مع ربط مباشر لملف التوقيع
+          # تنظيف Gradle أولاً ثم البدء بالبناء
+          ./gradlew clean
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}" \
+            --stacktrace
 
       - name: Create GitHub Release
         if: success()
