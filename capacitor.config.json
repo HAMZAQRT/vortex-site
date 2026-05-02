@@ -1,6 +1,6 @@
 {
   "appId": "com.vortex.network",
   "appName": "vortex-network",
-  "webDir": ".",
+  "webDir": "www",
   "bundledWebRuntime": false
 }
