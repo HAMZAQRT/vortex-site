@@ -1,4 +1,4 @@
-name: Vortex Final Success
+name: Vortex Final Fix
 on:
   push:
     branches: [main]
@@ -12,33 +12,38 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Install & Build
+      - name: Prepare Files & Build
         run: |
           npm install
+          # إنشاء مجلد www ونقل الملفات إليه لإرضاء Capacitor
+          mkdir -p www
+          cp index.html www/
+          cp -r *.svg www/ 2>/dev/null || true
+          cp -r *.png www/ 2>/dev/null || true
+          
+          # مسح المجلد القديم وبناء واحد جديد
+          rm -rf android
           npx cap add android
-          # نستخدم المسار الحالي لملفات الـ HTML
           npx cap sync android
-          # إصلاح الجافا آلياً
+          
+          # إصلاح الجافا
           find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
 
-      - name: Decode Keystore from Secrets
+      - name: Decode Keystore
         run: |
-          # سنقوم بإنشاء الملف بناءً على مفتاحك السري
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
-      - name: Build Official APK & AAB
+      - name: Build Official APK
         run: |
           cd android && chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease \
+          ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Upload Files
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vortex-Production-App
-          path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+          name: Vortex-Official-App
+          path: android/app/build/outputs/apk/release/*.apk
