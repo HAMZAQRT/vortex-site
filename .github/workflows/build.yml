@@ -29,7 +29,6 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          # فك تشفير الملف ووضعه داخل مجلد الأندرويد
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
       - name: Build APK
@@ -41,17 +40,12 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Move APK to Root
-        # هذه الخطوة هي الأهم: سحب الملف من المجلدات العميقة ووضعه أمام السيرفر مباشرة
-        run: |
-          cp android/app/build/outputs/apk/release/app-release.apk VortexApp-Final.apk
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v1.0.${{ github.run_number }}.${{ github.run_attempt }}"
           name: "Vortex Update v1.0.${{ github.run_number }}"
-          # هنا نأمر السيرفر برفع الملف الذي وضعناه في المجلد الرئيسي
-          files: VortexApp-Final.apk
+          # هذا هو السطر السحري: سيرفع أي ملف apk يجده في أي مجلد فرعي
+          files: "**/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
