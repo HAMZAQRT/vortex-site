@@ -1,4 +1,4 @@
-name: Vortex Success Final
+name: Vortex Official Production Build
 on:
   push:
     branches: [main]
@@ -15,24 +15,25 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Install & Sync
+      - name: Clean & Sync Android
         run: |
           npm install
           mkdir -p www && cp index.html www/
           rm -rf android
           npx cap add android
           npx cap sync android
+          
+          # التأكد من وجود الملف المرفوع ونقله للمجلد الصحيح
+          if [ -f "my-release-key.jks" ]; then
+            cp my-release-key.jks android/app/my-release-key.jks
+          else
+            echo "Error: my-release-key.jks not found in repository!"
+            exit 1
+          fi
+          
           find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
 
-      - name: Force Keystore Placement
-        run: |
-          # فك تشفير المفتاح ووضعه في المجلد الرئيسي لأندرويد
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
-          # وضع نسخة ثانية في المجلد الذي يطلبه Gradle تحديداً
-          mkdir -p /home/runner/.gradle/daemon/8.2.1/
-          cp android/app/my-release-key.jks /home/runner/.gradle/daemon/8.2.1/my-release-key.jks
-
-      - name: Build & Sign APK
+      - name: Build Signed Production APK
         run: |
           cd android
           chmod +x gradlew
@@ -42,8 +43,8 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Upload Final APK
+      - name: Export Final APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vortex-App-Official
+          name: Vortex-Network-Official
           path: android/app/build/outputs/apk/release/*.apk
