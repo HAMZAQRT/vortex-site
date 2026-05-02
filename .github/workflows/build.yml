@@ -14,28 +14,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21' # تم التحديث إلى 21 لحل مشكلة invalid source release
           distribution: 'zulu'
 
       - name: Clean Project Setup
         run: |
-          # إنشاء ملف package.json إذا لم يكن موجوداً
           echo '{"name": "vortex-app", "version": "1.0.0"}' > package.json
-          
-          # تثبيت الأدوات الضرورية
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          
-          # تجهيز مجلد ملفات الموقع
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
-          
-          # تهيئة Capacitor بدون خيارات تسبب أخطاء (تم حذف --confirm)
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
-          
-          # إضافة منصة أندرويد
           npx cap add android || true
           npx cap sync android
 
@@ -46,7 +37,6 @@ jobs:
       - name: Build Signed APK
         run: |
           cd android && chmod +x gradlew
-          # بناء التطبيق النهائي باستخدام الأسرار الخاصة بك
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
@@ -56,8 +46,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v9.0.${{ github.run_number }}"
-          name: "Vortex APK v9.${{ github.run_number }}"
+          tag_name: "v10.0.${{ github.run_number }}"
+          name: "Vortex APK v10.${{ github.run_number }}"
           files: android/app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
