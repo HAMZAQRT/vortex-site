@@ -1,4 +1,4 @@
-name: Production Build
+name: Final Vortex Build
 on:
   push:
     branches:
@@ -20,32 +20,26 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Setup Project From Scratch
+      - name: Setup and Sync
         run: |
-          # 1. إنشاء ملفات التعريف الأساسية
-          echo '{"name": "vortex-app", "version": "1.1.0", "dependencies": {}}' > package.json
-          
-          # 2. تثبيت الأدوات
+          # إنشاء الملفات الضرورية فقط
+          echo '{"name": "vortex-app", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # 3. تجهيز ملفات الويب (HTML)
+          # تجهيز الملفات ومزامنتها
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
-          
-          # 4. إعادة بناء مجلد الأندرويد لضمان عدم وجود أخطاء قديمة
-          rm -rf android
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www --confirm
-          npx cap add android
+          npx cap add android || true
           npx cap sync android
 
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
-      - name: Build Final APK
+      - name: Build APK
         run: |
           cd android && chmod +x gradlew
-          # أمر البناء المباشر والآمن
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
@@ -55,8 +49,8 @@ jobs:
       - name: Upload to Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.1.${{ github.run_number }}"
-          name: "Vortex Final Build ${{ github.run_number }}"
-          files: "**/*.apk"
+          tag_name: "v1.0.${{ github.run_number }}"
+          name: "Vortex Update ${{ github.run_number }}"
+          files: android/app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
