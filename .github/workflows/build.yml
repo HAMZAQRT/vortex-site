@@ -1,4 +1,4 @@
-name: Vortex Final Production Build
+name: Vortex Final Success
 on:
   push:
     branches: [main]
@@ -7,39 +7,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Install & Sync
+      - name: Install & Build
         run: |
           npm install
           npx cap add android
+          # نستخدم المسار الحالي لملفات الـ HTML
           npx cap sync android
-          # إصلاح التوافقية مع Java 17 آلياً
+          # إصلاح الجافا آلياً
           find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
 
       - name: Decode Keystore from Secrets
         run: |
-          # هنا نستخدم المفتاح السري الذي وضعته أنت في GitHub Secrets
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
+          # سنقوم بإنشاء الملف بناءً على مفتاحك السري
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
-      - name: Build Signed App (APK & AAB)
+      - name: Build Official APK & AAB
         run: |
           cd android && chmod +x gradlew
           ./gradlew assembleRelease bundleRelease \
-            -Pandroid.injected.signing.store.file=release.jks \
+            -Pandroid.injected.signing.store.file=my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Upload Production Files
+      - name: Upload Files
         uses: actions/upload-artifact@v4
         with:
-          name: Vortex-Production-Ready
+          name: Vortex-Production-App
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
