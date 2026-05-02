@@ -4,8 +4,9 @@ on:
     branches:
       - main
 
+# إعطاء صلاحيات كاملة للسيرفر لإنشاء التحديث
 permissions:
-  contents: write 
+  contents: write
 
 jobs:
   build:
@@ -35,17 +36,17 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Prepare APK for Release
+      - name: Get APK Path
+        id: apk_path
         run: |
-          # بحث آمن داخل مجلد الأندرويد فقط واستخراج الملف
-          find android -type f -name "*.apk" -exec cp {} VortexApp-Release.apk \;
+          # البحث عن الملف وتخزين مساره
+          echo "path=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v1.0.${{ github.run_number }}"
-          name: "Vortex Update #${{ github.run_number }}"
-          body: "تطبيق Vortex جاهز للتحميل والتثبيت."
-          files: VortexApp-Release.apk
+          name: "Vortex Update v1.0.${{ github.run_number }}"
+          files: ${{ steps.apk_path.outputs.path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
