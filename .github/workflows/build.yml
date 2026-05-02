@@ -1,9 +1,51 @@
-- name: Prepare Android Project
-  run: |
-    npm ci || npm install   # يجرب ci أولاً، وإذا فشل يستخدم install
-    mkdir -p www
-    cp index.html www/
-    
-    rm -rf android
-    npx cap add android
-    npx cap sync android
+name: Vortex Ultimate Success
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Prepare Android Project
+        run: |
+          npm install
+          mkdir -p www
+          cp index.html www/
+          # مسح وإعادة بناء الأندرويد لضمان نظافة المسارات
+          rm -rf android
+          npx cap add android
+          npx cap sync android
+          # إصلاح توافق الجافا
+          find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
+
+      - name: Decode Keystore
+        run: |
+          # تأكد أن اسم الملف هنا يطابق ما وجدناه في Termux
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
+
+      - name: Build & Auto-Sign APK
+        run: |
+          cd android
+          chmod +x gradlew
+          # بناء نسخة Release مع تمرير البيانات مباشرة
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=my-release-key.jks \
+            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}" \
+            --stacktrace
+
+      - name: Upload Final APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vortex-Official-App
+          path: android/app/build/outputs/apk/release/*.apk
