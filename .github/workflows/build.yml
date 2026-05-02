@@ -20,44 +20,32 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Prepare Capacitor & Android
+      - name: Install Dependencies
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
           mkdir -p www && cp -r * www/ 2>/dev/null || true
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android && npx cap copy
 
-      - name: Decode Keystore File
+      - name: Decode Keystore
         run: |
-          # فك التشفير ووضعه في المسار الرئيسي بشكل مضمون
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > $GITHUB_WORKSPACE/release.jks
-          
-          # فحص ذكي: إذا كان الملف فارغاً أو غير موجود، سيوقفك هنا ويخبرك بالسبب
-          if [ ! -s $GITHUB_WORKSPACE/release.jks ]; then
-            echo "❌ خطأ: ملف المفتاح فارغ! تأكد من أنك قمت بتحويل ملف .jks إلى Base64 ولصق النص بالكامل في سر KEYSTORE_FILE."
-            exit 1
-          fi
+          # سنضع الملف مباشرة داخل مجلد التطبيق لكي يراه نظام الأندرويد فوراً
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
       - name: Build APK
         run: |
           cd android && chmod +x gradlew
-          # استخدام المسار الثابت للملف
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.jks \
+            -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Get APK Path
-        id: apk_path
-        run: |
-          echo "path=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
+      - name: Upload to Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.0.${{ github.run_number }}.${{ github.run_attempt }}"
-          name: "Vortex Update v1.0.${{ github.run_number }}.${{ github.run_attempt }}"
-          files: ${{ steps.apk_path.outputs.path }}
+          tag_name: "v1.0.${{ github.run_number }}"
+          name: "Vortex Update v1.0.${{ github.run_number }}"
+          files: android/app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
