@@ -22,28 +22,31 @@ jobs:
 
       - name: Build Preparation
         run: |
-          # 1. تثبيت Capacitor
+          # 1. إعداد البيئة
           echo '{"name": "vortex-app", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # 2. تجهيز ملفات الويب (المهمة جداً للرفع على جوجل)
+          # 2. التأكد من وجود ملفات الويب
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
           
-          # 3. إنشاء مشروع أندرويد مستقر
+          # 3. بناء الأندرويد
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
           
-          # 4. إصلاح ملفات Gradle يدوياً لتجنب أخطاء الصور السابقة
-          # استخدام Java 17 بدلاً من 21 لضمان استقرار المكتبات الحالية
+          # 4. الحل الجذري لمشاكل النسخ (إجبار التوافق)
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
+          
+          # تعديل ملف build.gradle لإجبار استخدام Java 17 المتوفرة بالسيرفر
+          sed -i 's/sourceCompatibility JavaVersion.VERSION_21/sourceCompatibility JavaVersion.VERSION_17/g' android/app/build.gradle
+          sed -i 's/targetCompatibility JavaVersion.VERSION_21/targetCompatibility JavaVersion.VERSION_17/g' android/app/build.gradle
           
           npx cap sync android
 
       - name: Decode Keystore
         run: |
-          # فك تشفير المفتاح (هذا الجزء نجح في محاولاتك السابقة)
+          # فك تشفير المفتاح (الجزء الذي كان يسبب أخطاء في البداية)
           echo "${{ secrets.KEYSTORE_FILE }}" | tr -dc 'a-zA-Z0-9+/=' | base64 --decode > android/app/release.jks
 
       - name: Generate Signed APK
@@ -52,7 +55,7 @@ jobs:
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           chmod +x gradlew
           
-          # تشغيل البناء مع إجبار النظام على تجاوز أخطاء المكتبات غير الحرجة
+          # البناء النهائي
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
