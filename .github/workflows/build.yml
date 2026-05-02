@@ -1,4 +1,4 @@
-name: Vortex Ultimate Success
+name: Vortex Final Fix
 on:
   push:
     branches: [main]
@@ -15,37 +15,32 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Prepare Android Project
+      - name: Install & Prepare
         run: |
           npm install
-          mkdir -p www
-          cp index.html www/
-          # مسح وإعادة بناء الأندرويد لضمان نظافة المسارات
+          mkdir -p www && cp index.html www/
           rm -rf android
           npx cap add android
           npx cap sync android
-          # إصلاح توافق الجافا
+          # إصلاح إصدار الجافا
           find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
 
       - name: Decode Keystore
         run: |
-          # تأكد أن اسم الملف هنا يطابق ما وجدناه في Termux
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
-      - name: Build & Auto-Sign APK
+      - name: Build Signed APK
         run: |
           cd android
           chmod +x gradlew
-          # بناء نسخة Release مع تمرير البيانات مباشرة
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=my-release-key.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}" \
-            --stacktrace
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Upload Final APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vortex-Official-App
+          name: Vortex-Network-App
           path: android/app/build/outputs/apk/release/*.apk
