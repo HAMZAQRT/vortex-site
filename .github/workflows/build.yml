@@ -22,23 +22,19 @@ jobs:
 
       - name: Build Preparation
         run: |
-          # 1. إنشاء ملفات التكوين الأساسية
           echo '{"name": "vortex-app", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          
-          # 2. تجهيز مجلد الويب ونقل ملفاتك (index.html والمجلدات)
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
-          
-          # 3. تهيئة أندرويد وإصلاح إعدادات Gradle فوراً
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android
           
-          # 4. حقن إعدادات التوافق داخل ملفات أندرويد لضمان قبول Java 21
+          # إصلاحات جوهرية للتوافق مع متجر جوجل
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.java.home=$JAVA_HOME" >> android/gradle.properties
-          # إجبار إصدار Java في ملف build.gradle الخاص بالتطبيق
+          
+          # تحديث إعدادات Java في ملفات أندرويد لتجنب خطأ "invalid source release: 21"
           sed -i 's/sourceCompatibility JavaVersion.VERSION_17/sourceCompatibility JavaVersion.VERSION_21/g' android/app/build.gradle
           sed -i 's/targetCompatibility JavaVersion.VERSION_17/targetCompatibility JavaVersion.VERSION_21/g' android/app/build.gradle
           
@@ -46,7 +42,7 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          # فك التشفير مع تنظيف المدخلات من أي رموز غريبة (base64 fix)
+          # فك تشفير المفتاح وتجهيزه للتوقيع
           echo "${{ secrets.KEYSTORE_FILE }}" | tr -dc 'a-zA-Z0-9+/=' | base64 --decode > android/app/release.jks
 
       - name: Generate Signed APK
@@ -55,13 +51,16 @@ jobs:
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           chmod +x gradlew
           
-          # البناء النهائي مع تعطيل الـ Daemon لضمان عدم حدوث تعارض في الذاكرة
+          # تحديث Gradle Wrapper لضمان التوافق مع Java 21
+          ./gradlew wrapper --gradle-version 8.5
+          
+          # البناء مع تعطيل المهام الخلفية لضمان الاستقرار
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}" \
-            --no-daemon
+            --no-daemon --stacktrace
 
       - name: Create GitHub Release
         if: success()
