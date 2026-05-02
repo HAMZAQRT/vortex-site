@@ -22,23 +22,26 @@ jobs:
 
       - name: Build Preparation
         run: |
-          # تجهيز البيئة وتثبيت Capacitor
           echo '{"name": "vortex-app", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android || true
+          # التزامن ضروري لإنشاء مجلد أندرويد بشكل صحيح
           npx cap sync android
 
       - name: Decode Keystore
         run: |
-          # تنظيف السر من أي مسافات أو أسطر زائدة ناتجة عن النسخ من الموبايل ثم فك التشفير
-          echo "${{ secrets.KEYSTORE_FILE }}" | tr -d '[:space:]' | base64 --decode > android/app/release.jks
+          # تنظيف الكود وفك التشفير (تجاوزنا هذه المرحلة بنجاح)
+          echo "${{ secrets.KEYSTORE_FILE }}" | tr -dc 'a-zA-Z0-9+/=' | base64 --decode > android/app/release.jks
 
       - name: Generate Signed APK
         run: |
-          cd android && chmod +x gradlew
+          cd android
+          # إعطاء صلاحيات للملف التنفيذي لـ Gradle
+          chmod +x gradlew
+          # تشغيل البناء مع ربط مباشر لملف التوقيع
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
@@ -46,6 +49,7 @@ jobs:
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
       - name: Create GitHub Release
+        if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v1.0.${{ github.run_number }}"
