@@ -1,6 +1,5 @@
 {
   "appId": "com.vortextrust.app",
   "appName": "Vortex Network",
-  "webDir": ".",
-  "bundledWebRuntime": false
+  "webDir": "."
 }
