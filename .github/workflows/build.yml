@@ -1,4 +1,4 @@
-name: Vortex Ultimate Fix
+name: Vortex Final Power Fix
 on:
   push:
     branches: [main]
@@ -15,33 +15,32 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Fix Permissions & Prepare Files
+      - name: Force Permissions & Prepare
         run: |
-          # منح صلاحية التنفيذ للنظام
-          chmod -R +x .
+          # منح صلاحية كاملة للمجلد والمحتويات
+          chmod -R 777 .
           
-          # إنشاء مجلد www ونقل ملفاتك إليه (لحل مشكلة webDir)
+          # إنشاء مجلد www ونقل الملفات إليه
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
-          cp package.json www/ 2>/dev/null || true
           
           npm install
-          
-          # مسح أي بناء قديم وبدء بناء نظيف
+          # مسح المجلد القديم وإضافة أندرويد من جديد
           rm -rf android
           npx cap add android
           npx cap sync android
           
-          # إصلاح الجافا تلقائياً
-          find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
+          # منح صلاحية التنفيذ لملفات أندرويد الجديدة
+          chmod -R +x android/
 
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
-      - name: Build Final APK
+      - name: Build Official APK
         run: |
           cd android
+          # منح صلاحية التنفيذ لملف gradlew تحديداً
           chmod +x gradlew
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=my-release-key.jks \
@@ -52,5 +51,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vortex-Network-Success
+          name: Vortex-Official-Success
           path: android/app/build/outputs/apk/release/*.apk
