@@ -11,39 +11,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Java 21 - مهم جداً لحل مشكلتك
+      # Java 21 بدون Cache مؤقتاً
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-          cache: 'gradle'
+          # cache: 'gradle'   ← علّق هذا السطر أو احذفه
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Sync Capacitor
+      - name: Sync Capacitor Android
         run: npx cap sync android
 
-      # بناء AAB موقعّع (لـ Google Play)
-      - name: Build Signed AAB
+      - name: Build Signed AAB (لـ Google Play)
         run: |
           cd android
+          chmod +x gradlew
           ./gradlew bundleRelease
         env:
-          SIGNING_STORE_FILE: keystore.jks
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-
-      - name: Upload AAB Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: android/app/build/outputs/bundle/release/app-release.aab
