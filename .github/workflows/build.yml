@@ -20,17 +20,30 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Build APK
+      - name: Prepare Capacitor & Android
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
           mkdir -p www && cp -r * www/ 2>/dev/null || true
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
           npx cap add android && npx cap copy
-          mkdir -p android/app
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
+
+      - name: Decode Keystore File
+        run: |
+          # فك التشفير ووضعه في المسار الرئيسي بشكل مضمون
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > $GITHUB_WORKSPACE/release.jks
+          
+          # فحص ذكي: إذا كان الملف فارغاً أو غير موجود، سيوقفك هنا ويخبرك بالسبب
+          if [ ! -s $GITHUB_WORKSPACE/release.jks ]; then
+            echo "❌ خطأ: ملف المفتاح فارغ! تأكد من أنك قمت بتحويل ملف .jks إلى Base64 ولصق النص بالكامل في سر KEYSTORE_FILE."
+            exit 1
+          fi
+
+      - name: Build APK
+        run: |
           cd android && chmod +x gradlew
+          # استخدام المسار الثابت للملف
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=my-release-key.jks \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
@@ -43,7 +56,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          # إضافة رقم المحاولة لضمان عدم تكرار الاسم أبداً
           tag_name: "v1.0.${{ github.run_number }}.${{ github.run_attempt }}"
           name: "Vortex Update v1.0.${{ github.run_number }}.${{ github.run_attempt }}"
           files: ${{ steps.apk_path.outputs.path }}
