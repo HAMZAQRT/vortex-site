@@ -1,10 +1,13 @@
-name: Vortex Nuclear Fix
+name: Vortex Ultimate Success
+
 on:
   push:
     branches: [main]
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -15,49 +18,57 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Clean & Force Install
+      - name: Prepare Android Project
         run: |
-          # مسح أي مخلفات قديمة
-          rm -rf node_modules package-lock.json android www
-          
-          # تثبيت الأدوات الأساسية فقط لضمان عدم حدوث خطأ
-          npm install -g @ionic/cli @capacitor/core @capacitor/cli
-          npm install
-          
-          # تجهيز مجلد www يدويًا (الحل المضمون)
+          npm ci  # أفضل من npm install
           mkdir -p www
           cp index.html www/
-          cp *.png www/ 2>/dev/null || true
-          cp *.svg www/ 2>/dev/null || true
-
-          # إنشاء مشروع أندرويد نظيف
+          
+          # إعادة بناء مجلد android
+          rm -rf android
           npx cap add android
           npx cap sync android
-          
-          # إصلاح الجافا والصلاحيات
-          find android/ -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
-          chmod +x android/gradlew
 
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
-      - name: Final Build
+      - name: Configure Signing
         run: |
           cd android
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=my-release-key.jks \
-            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+          cat >> app/build.gradle << EOF
+          
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file("my-release-key.jks")
+                      storePassword "${{ secrets.KEYSTORE_PASSWORD }}"
+                      keyAlias "${{ secrets.KEY_ALIAS }}"
+                      keyPassword "${{ secrets.KEY_PASSWORD }}"
+                  }
+              }
+              
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace --info
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vortex-Success-APK
+          name: Vortex-Official-App
           path: android/app/build/outputs/apk/release/*.apk
