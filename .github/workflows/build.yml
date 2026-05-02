@@ -1,4 +1,4 @@
-name: Final Build for Google Play
+name: Production Build
 on:
   push:
     branches:
@@ -20,45 +20,43 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Initialize Project Environment
+      - name: Setup Project From Scratch
         run: |
-          # إنشاء ملف package.json إذا لم يكن موجوداً ليتعرف عليه النظام
-          if [ ! -f package.json ]; then
-            echo '{"name": "vortex-app", "version": "1.0.0", "dependencies": {}}' > package.json
-          fi
+          # 1. إنشاء ملفات التعريف الأساسية
+          echo '{"name": "vortex-app", "version": "1.1.0", "dependencies": {}}' > package.json
           
-          # تثبيت الأدوات اللازمة
+          # 2. تثبيت الأدوات
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # تجهيز مجلد الويب ونسخ ملفات HTML الخاصة بك إليه
+          # 3. تجهيز ملفات الويب (HTML)
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
           
-          # تهيئة Capacitor ومزامنة الملفات الجديدة
+          # 4. إعادة بناء مجلد الأندرويد لضمان عدم وجود أخطاء قديمة
+          rm -rf android
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www --confirm
-          npx cap add android || true
+          npx cap add android
           npx cap sync android
 
-      - name: Decode Signing Key
+      - name: Decode Keystore
         run: |
-          # فك تشفير المفتاح الذي وضعته في Secrets
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
-      - name: Build Signed APK
+      - name: Build Final APK
         run: |
           cd android && chmod +x gradlew
-          # تنظيف وبناء نسخة جديدة كلياً
-          ./gradlew clean assembleRelease \
+          # أمر البناء المباشر والآمن
+          ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Publish Release
+      - name: Upload to Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.0.${{ github.run_number }}"
-          name: "Vortex App - New Update ${{ github.run_number }}"
+          tag_name: "v1.1.${{ github.run_number }}"
+          name: "Vortex Final Build ${{ github.run_number }}"
           files: "**/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
