@@ -22,31 +22,38 @@ jobs:
 
       - name: Build Preparation
         run: |
+          # إنشاء ملف package.json الأساسي
           echo '{"name": "vortex-app", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
+          
+          # تجهيز مجلد www ونقل ملفاتك (index.html والـ svg) إليه
           mkdir -p www
-          cp -r * www/ 2>/dev/null || true
+          cp index.html *.png *.svg www/ 2>/dev/null || true
+          
+          # تهيئة Capacitor وإضافة منصة أندرويد
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
-          npx cap add android || true
+          npx cap add android
           npx cap sync android
 
       - name: Decode Keystore
         run: |
-          # فك التشفير ووضع الملف في مكان يسهل الوصول إليه داخل مجلد أندرويد
+          # تنظيف السر وفك التشفير إلى المسار الصحيح
           echo "${{ secrets.KEYSTORE_FILE }}" | tr -dc 'a-zA-Z0-9+/=' | base64 --decode > android/app/release.jks
 
       - name: Generate Signed APK
         run: |
           cd android
+          # تعريف مسار الـ SDK لتجنب أخطاء Gradle الموضحة في الصور
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           chmod +x gradlew
-          # تنظيف Gradle أولاً ثم البدء بالبناء
-          ./gradlew clean
+          
+          # بناء النسخة الموقعة باستخدام الأسرار المحددة
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}" \
-            --stacktrace
+            --no-daemon
 
       - name: Create GitHub Release
         if: success()
