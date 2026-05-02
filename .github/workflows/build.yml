@@ -1,4 +1,4 @@
-name: Build Play Store Ready APK
+name: Build Fresh APK
 on:
   push:
     branches:
@@ -20,39 +20,33 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Prepare Website Files
+      - name: Sync HTML to App
         run: |
-          # التأكد من وجود مجلد الويب ونسخ ملفات HTML إليه
+          # التأكد من تحديث المكتبات ومزامنة ملفات الـ HTML الجديدة
+          npm install @capacitor/core @capacitor/cli @capacitor/android
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
-          
-      - name: Initialize Capacitor
-        run: |
-          npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
-          npx cap add android
-          npx cap copy
+          npx cap sync android
 
-      - name: Decode Signing Key
+      - name: Decode & Sign
         run: |
-          # فك تشفير مفتاح التوقيع الخاص بك (ضروري لمتجر بلاي)
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
-      - name: Build Signed APK
+      - name: Build New APK
         run: |
           cd android && chmod +x gradlew
-          ./gradlew assembleRelease \
+          ./gradlew clean assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Upload Final APK to Releases
+      - name: Push to Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "release-v1.${{ github.run_number }}"
-          name: "Vortex App V1.${{ github.run_number }} (Google Play Ready)"
-          # البحث عن الملف ورفعه مهما كان مكانه
+          tag_name: "v1.0.${{ github.run_number }}-final"
+          name: "Vortex New Build ${{ github.run_number }}"
           files: "**/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
