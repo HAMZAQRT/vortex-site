@@ -1,4 +1,4 @@
-name: Build and Release APK
+name: Build Play Store Ready APK
 on:
   push:
     branches:
@@ -20,18 +20,25 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Install Dependencies
+      - name: Prepare Website Files
+        run: |
+          # التأكد من وجود مجلد الويب ونسخ ملفات HTML إليه
+          mkdir -p www
+          cp -r * www/ 2>/dev/null || true
+          
+      - name: Initialize Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          mkdir -p www && cp -r * www/ 2>/dev/null || true
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
-          npx cap add android && npx cap copy
+          npx cap add android
+          npx cap copy
 
-      - name: Decode Keystore
+      - name: Decode Signing Key
         run: |
+          # فك تشفير مفتاح التوقيع الخاص بك (ضروري لمتجر بلاي)
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
-      - name: Build APK
+      - name: Build Signed APK
         run: |
           cd android && chmod +x gradlew
           ./gradlew assembleRelease \
@@ -40,12 +47,12 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Create Release
+      - name: Upload Final APK to Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.0.${{ github.run_number }}.${{ github.run_attempt }}"
-          name: "Vortex Update v1.0.${{ github.run_number }}"
-          # هذا هو السطر السحري: سيرفع أي ملف apk يجده في أي مجلد فرعي
+          tag_name: "release-v1.${{ github.run_number }}"
+          name: "Vortex App V1.${{ github.run_number }} (Google Play Ready)"
+          # البحث عن الملف ورفعه مهما كان مكانه
           files: "**/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
