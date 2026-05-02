@@ -1,4 +1,4 @@
-name: Build Fresh APK
+name: Final Build for Google Play
 on:
   push:
     branches:
@@ -20,33 +20,45 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Sync HTML to App
+      - name: Initialize Project Environment
         run: |
-          # التأكد من تحديث المكتبات ومزامنة ملفات الـ HTML الجديدة
+          # إنشاء ملف package.json إذا لم يكن موجوداً ليتعرف عليه النظام
+          if [ ! -f package.json ]; then
+            echo '{"name": "vortex-app", "version": "1.0.0", "dependencies": {}}' > package.json
+          fi
+          
+          # تثبيت الأدوات اللازمة
           npm install @capacitor/core @capacitor/cli @capacitor/android
+          
+          # تجهيز مجلد الويب ونسخ ملفات HTML الخاصة بك إليه
           mkdir -p www
           cp -r * www/ 2>/dev/null || true
-          npx cap init "VortexApp" "com.vortextrust.app" --web-dir www
+          
+          # تهيئة Capacitor ومزامنة الملفات الجديدة
+          npx cap init "VortexApp" "com.vortextrust.app" --web-dir www --confirm
+          npx cap add android || true
           npx cap sync android
 
-      - name: Decode & Sign
+      - name: Decode Signing Key
         run: |
+          # فك تشفير المفتاح الذي وضعته في Secrets
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
-      - name: Build New APK
+      - name: Build Signed APK
         run: |
           cd android && chmod +x gradlew
+          # تنظيف وبناء نسخة جديدة كلياً
           ./gradlew clean assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Push to Releases
+      - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.0.${{ github.run_number }}-final"
-          name: "Vortex New Build ${{ github.run_number }}"
+          tag_name: "v1.0.${{ github.run_number }}"
+          name: "Vortex App - New Update ${{ github.run_number }}"
           files: "**/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
