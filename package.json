@@ -2,13 +2,13 @@
   "name": "vortex-network",
   "version": "1.0.0",
   "scripts": {
-    "build": "echo 'Skipping web build...'",
-    "ionic:build": "echo 'Building...'",
-    "ionic:cap:build:android": "npx cap add android && npx cap copy android"
+    "build": "echo 'Building web assets...'",
+    "ionic:build": "npm run build",
+    "ionic:cap:build:android": "npx cap add android && npx cap sync android"
   },
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/cli": "^6.0.0",
-    "@capacitor/core": "^6.0.0"
+    "@capacitor/android": "6.0.0",
+    "@capacitor/cli": "6.0.0",
+    "@capacitor/core": "6.0.0"
   }
 }
