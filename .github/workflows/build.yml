@@ -1,4 +1,4 @@
-name: Sign and Build APK
+name: Final Vortex Release Build
 on:
   push:
     branches:
@@ -14,15 +14,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Prepare Web Files
+      - name: Environment Setup
         run: |
-          # إنشاء ملف التعريف وتجهيز ملفات الـ HTML
           echo '{"name": "vortex-app", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
           mkdir -p www
@@ -31,27 +30,25 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Use Secrets for Keystore
+      - name: Decode Keystore
         run: |
-          # فك تشفير ملف المفتاح من السكريت وضعه في مسار الأندرويد
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
       - name: Build Signed APK
         run: |
           cd android && chmod +x gradlew
-          # استخدام كلمات السر من السكريت (يجب أن تطابق الأسماء في إعدادات GitHub)
+          # التعديل الجوهري هنا: التعامل مع المسافات في الـ Alias بشكل احترافي
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
-      - name: Create New Release
+      - name: Release to GitHub
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.0.${{ github.run_number }}-signed"
-          name: "Vortex Signed Update ${{ github.run_number }}"
-          # رفع ملف الـ APK النهائي
+          tag_name: "v5.0.${{ github.run_number }}"
+          name: "Vortex Final Build v5.${{ github.run_number }}"
           files: android/app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
