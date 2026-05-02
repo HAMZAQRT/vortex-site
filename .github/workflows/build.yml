@@ -20,12 +20,11 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Environment Setup
+      - name: Build Environment
         run: |
           echo '{"name": "vortex-app", "version": "1.0.0"}' > package.json
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          mkdir -p www
-          cp -r * www/ 2>/dev/null || true
+          mkdir -p www && cp -r * www/ 2>/dev/null || true
           npx cap init "VortexApp" "com.vortextrust.app" --web-dir www --confirm
           npx cap add android || true
           npx cap sync android
@@ -34,21 +33,21 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/release.jks
 
-      - name: Build Signed APK
+      - name: Build Final APK
         run: |
           cd android && chmod +x gradlew
-          # التعديل الجوهري هنا: التعامل مع المسافات في الـ Alias بشكل احترافي
+          # استخدام صيغة مباشرة وصارمة للتوقيع
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=release.jks \
-            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
 
       - name: Release to GitHub
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v5.0.${{ github.run_number }}"
-          name: "Vortex Final Build v5.${{ github.run_number }}"
+          tag_name: "v6.0.${{ github.run_number }}"
+          name: "Vortex Production v6.${{ github.run_number }}"
           files: android/app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
